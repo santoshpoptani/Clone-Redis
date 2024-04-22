@@ -1,8 +1,7 @@
 public class EchoCommand {
-    public static String echoCommand(String input) {
+    public static String echoCommand(String[] input) {
+        String echoString = input[1];
         System.out.println("Starting echo response ");
-
-        return BulkString.getRespValue(input);
-
+        return BulkString.getRespValue(echoString);
     }
 }
