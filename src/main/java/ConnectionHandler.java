@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class ConnectionHandler implements Runnable{
     private Socket clientSocket;
@@ -17,31 +18,24 @@ public class ConnectionHandler implements Runnable{
 
             InputStream in = clientSocket.getInputStream();
             InputStreamReader reader = new InputStreamReader(in);
-            BufferedReader bufferedReader = new BufferedReader(reader);
+            DataInputStream dataInputStream =
+                    new DataInputStream(clientSocket.getInputStream());
             // Get the output stream from the client socket and write data to it using
             // a BufferedWriter
-            OutputStreamWriter writer =
-                    new OutputStreamWriter(clientSocket.getOutputStream());
-            BufferedWriter bufferedWriter = new BufferedWriter(writer);
-            String command;
-            while ((command = bufferedReader.readLine()) != null) {
-                // If the command is PING, write +PONG back to the client
-                if (command.equalsIgnoreCase("ping")) {
-                    // Read the data from the client and write it back to the client
-                    bufferedWriter.write("+PONG\r\n");
-                }
-                // Flush the buffered writer
-                bufferedWriter.flush();
+            OutputStream dataOut = clientSocket.getOutputStream();
+            while (true) {
+                String parsedCommand = ProtocolParser.parseInput(dataInputStream);
+                String result = CommandHandler.processCommand(parsedCommand, dataOut);
+                dataOut.write(result.getBytes(StandardCharsets.UTF_8));
+                dataOut.flush();
             }
         }catch (IOException e) {
             System.out.println("IOException: " + e.getMessage());
         } finally {
             try {
-                if (clientSocket != null) {
-                    clientSocket.close();
-                }
-            } catch (IOException e) {
-                System.out.println("IOException: " + e.getMessage());
+                clientSocket.close();
+            } catch (Exception e) {
+                System.out.println("Exception closing connection " + e);
             }
         }
 
